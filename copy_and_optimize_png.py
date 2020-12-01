@@ -41,11 +41,11 @@ def images_are_same(src_path, dst_path) -> bool:
 
 def image_needs_update(src_path, dst_path, report: CopyingReport) -> bool:
 	if not os.path.exists(dst_path):
-		print(f"Warning: new file detected {src_path} as no file at {dst_path}")
+		print(f"  > Warning: new file detected {src_path} as no file at {dst_path}")
 		report.new_file += 1
 		return True
 	elif not images_are_same(src_path, dst_path):
-		print("Image is different - copying and optimizing with ect")
+		print("  > Image is different - copying and optimizing with ect")
 		report.dst_update += 1
 		return True
 	else:
@@ -61,7 +61,7 @@ def main(src_folder, dst_folder):
 		src_rel_path = os.path.relpath(src_path, src_folder)
 		dst_path = os.path.join(dst_folder, src_rel_path)
 
-		print(f"Processing [{src_rel_path}] ", end='')
+		print(f"Processing [{src_rel_path}]")
 		if image_needs_update(src_path, dst_path, copying_report):
 			shutil.copyfile(src_path, dst_path)
 			ect(dst_path)
