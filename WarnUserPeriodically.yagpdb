@@ -1,45 +1,46 @@
 {{/*
-if user is not admin [IMPLEMENTED, need to update ID]
+if user is not developer [IMPLEMENTED, need to update ID]
 and user not warned in last month [IMPLEMENTED, need to update time]
-and no warning issued in last hour [could also implement as "if ]
+and no warning issued in last hour [IMPLEMENTED, need to update time]
 and user has been member for < 6 months [?? don't implement this ??]
 */}}
 
-{{$adminID := 686192651472732240 }}
-{{$deleteTime := .TimeMinute}}
-{{$messageFrequency := mult .TimeHour 1}}
 {{$lastSupportWarningKey := "supportWarning"}}
+{{$developerID := 384430157877739520}}
+{{$globalMessageFrequency := 60}} {{/* 3600 */}}
+{{$messageFrequency := 120}} {{/* 604800 = 1 week */}}
+{{$messageDeleteDelay := 60}}
 
-
-{{ if hasRoleID  $adminID }}
-    You are an admin - not issuing warning
-{{ else }}
-    Got message from user `{{.User.ID }}`
-
-    {{$note := dbGet .User.ID $lastSupportWarningKey}}
-
-    {{$updateKeyAndPrintMessage := false}}
-
-    {{if $note}}
-        {{$timeSinceLastMessage := currentTime.Sub $note.UpdatedAt}}
-        Got note updated at {{ $note.UpdatedAt }}
-
-        Time Passed: {{ humanizeDurationSeconds $timeSinceLastMessage }} Message Frequency: {{ $messageFrequency }}
-
-        {{if gt $timeSinceLastMessage $messageFrequency}}
-            {{$updateKeyAndPrintMessage := true}}
-        {{ end}}
-    {{else}}
-        {{$updateKeyAndPrintMessage := true}}
-    {{ end }}
-
-    {{if $updateKeyAndPrintMessage}}
-        Creating new note
-        {{dbSet .User.ID $lastSupportWarningKey ""}}
-        TODO: Enter support message here
-    {{ end }}
-
+{{/* ------ Print database state for debugging ------ */}}
+{{ if true }}
+Global Timeout: {{ humanizeDurationSeconds ((dbGet 0 $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
+User Timeout: {{ humanizeDurationSeconds ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
 {{ end }}
 
-Message will delete in {{ $deleteTime }} seconds
-{{ deleteResponse $deleteTime  }}
+{{/* ------ I don't know how to "return" or "exit early", so use this variable to keep track of whether should exit ------ */}}
+{{$continue := true}}
+{{/* Quit if user is admin */}}
+{{ if and $continue (hasRoleID $developerID) }}
+    {{$continue = false}}
+{{ end }}
+
+{{/* ------  Quit if a warning was issued recently ------  */}}
+{{$note := dbGet 0 $lastSupportWarningKey}}
+{{if and $continue $note}}
+    {{$continue = false}}
+{{else}}
+    {{dbSetExpire 0 $lastSupportWarningKey "" $globalMessageFrequency}}
+{{ end }}
+
+{{/* ------ Reply user if their individual timeout has expired  ------ */}}
+{{if $continue}}
+    {{$note := dbGet .User.ID $lastSupportWarningKey}}
+    {{if not $note}}
+Creating new db entry to expire in {{ $messageFrequency }} seconds ...TODO: Enter support message here
+        {{dbSetExpire .User.ID $lastSupportWarningKey "" $messageFrequency}}
+This message will delete itself in {{ $messageDeleteDelay }} seconds
+    {{ end }}
+{{ end }}
+
+{{/* ------ Automatically delete this message after given delay  ------ */}}
+{{ deleteResponse $messageDeleteDelay  }}
