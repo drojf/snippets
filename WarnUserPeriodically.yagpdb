@@ -8,7 +8,7 @@ and user has been member for < 6 months [?? don't implement this ??]
 {{$lastSupportWarningKey := "supportWarning"}}
 {{$globalMessageFrequency := 60}} {{/* 3600 */}}
 {{$messageFrequency := 120}} {{/* 604800 = 1 week */}}
-{{$messageDeleteDelay := 60}}
+{{$messageDeleteDelay := 1800 }}
 
 {{/* ------ Print database state for debugging ------ */}}
 {{ if true }}
@@ -31,9 +31,8 @@ User Timeout: {{ ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentT
 {{if $continue}}
     {{$note := dbGet .User.ID $lastSupportWarningKey}}
     {{if not $note}}
-Creating new db entry to expire in {{ $messageFrequency }} seconds ...TODO: Enter support message here
         {{dbSetExpire .User.ID $lastSupportWarningKey "" $messageFrequency}}
-This message will delete itself in {{ $messageDeleteDelay }} seconds
+This message will delete itself in {{ humanizeDurationSeconds $messageDeleteDelay }}
     {{ end }}
 {{ end }}
 
