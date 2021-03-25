@@ -1,0 +1,45 @@
+{{/*
+if user is not admin [IMPLEMENTED, need to update ID]
+and user not warned in last month [IMPLEMENTED, need to update time]
+and no warning issued in last hour [could also implement as "if ]
+and user has been member for < 6 months [?? don't implement this ??]
+*/}}
+
+{{$adminID := 686192651472732240 }}
+{{$deleteTime := .TimeMinute}}
+{{$messageFrequency := mult .TimeHour 1}}
+{{$lastSupportWarningKey := "supportWarning"}}
+
+
+{{ if hasRoleID  $adminID }}
+    You are an admin - not issuing warning
+{{ else }}
+    Got message from user `{{.User.ID }}`
+
+    {{$note := dbGet .User.ID $lastSupportWarningKey}}
+
+    {{$updateKeyAndPrintMessage := false}}
+
+    {{if $note}}
+        {{$timeSinceLastMessage := currentTime.Sub $note.UpdatedAt}}
+        Got note updated at {{ $note.UpdatedAt }}
+
+        Time Passed: {{ humanizeDurationSeconds $timeSinceLastMessage }} Message Frequency: {{ $messageFrequency }}
+
+        {{if gt $timeSinceLastMessage $messageFrequency}}
+            {{$updateKeyAndPrintMessage := true}}
+        {{ end}}
+    {{else}}
+        {{$updateKeyAndPrintMessage := true}}
+    {{ end }}
+
+    {{if $updateKeyAndPrintMessage}}
+        Creating new note
+        {{dbSet .User.ID $lastSupportWarningKey ""}}
+        TODO: Enter support message here
+    {{ end }}
+
+{{ end }}
+
+Message will delete in {{ $deleteTime }} seconds
+{{ deleteResponse $deleteTime  }}
