@@ -63,6 +63,7 @@ def main(src_folder, dst_folder):
 
 		print(f"Processing [{src_rel_path}]")
 		if image_needs_update(src_path, dst_path, copying_report):
+			Path(os.path.dirname(dst_path)).mkdir(parents=True, exist_ok=True)
 			shutil.copyfile(src_path, dst_path)
 			ect(dst_path)
 
