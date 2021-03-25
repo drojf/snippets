@@ -6,7 +6,6 @@ and user has been member for < 6 months [?? don't implement this ??]
 */}}
 
 {{$lastSupportWarningKey := "supportWarning"}}
-{{$developerID := 384430157877739520}}
 {{$globalMessageFrequency := 60}} {{/* 3600 */}}
 {{$messageFrequency := 120}} {{/* 604800 = 1 week */}}
 {{$messageDeleteDelay := 60}}
@@ -19,10 +18,6 @@ User Timeout: {{ humanizeDurationSeconds ((dbGet .User.ID $lastSupportWarningKey
 
 {{/* ------ I don't know how to "return" or "exit early", so use this variable to keep track of whether should exit ------ */}}
 {{$continue := true}}
-{{/* Quit if user is admin */}}
-{{ if and $continue (hasRoleID $developerID) }}
-    {{$continue = false}}
-{{ end }}
 
 {{/* ------  Quit if a warning was issued recently ------  */}}
 {{$note := dbGet 0 $lastSupportWarningKey}}
