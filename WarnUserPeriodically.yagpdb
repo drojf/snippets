@@ -12,8 +12,8 @@ and user has been member for < 6 months [?? don't implement this ??]
 
 {{/* ------ Print database state for debugging ------ */}}
 {{ if true }}
-Global Timeout: {{ humanizeDurationSeconds ((dbGet 0 $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
-User Timeout: {{ humanizeDurationSeconds ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
+Global Timeout: {{ ((dbGet 0 $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
+User Timeout: {{ ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
 {{ end }}
 
 {{/* ------ I don't know how to "return" or "exit early", so use this variable to keep track of whether should exit ------ */}}
