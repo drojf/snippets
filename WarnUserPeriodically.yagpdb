@@ -6,9 +6,9 @@ and user has been member for < 6 months [?? don't implement this ??]
 */}}
 
 {{$lastSupportWarningKey := "supportWarning"}}
-{{$globalMessageFrequency := 60}} {{/* 3600 */}}
-{{$messageFrequency := 120}} {{/* 604800 = 1 week */}}
-{{$messageDeleteDelay := 1800 }}
+{{$globalMessageFrequency := toDuration "5s"}}
+{{$messageFrequency := toDuration "10s"}}
+{{$messageDeleteDelay := toDuration "30m" }}
 
 {{/* ------ Print database state for debugging ------ */}}
 {{ if true }}
@@ -16,25 +16,14 @@ Global Timeout: {{ ((dbGet 0 $lastSupportWarningKey).ExpiresAt.Sub currentTime) 
 User Timeout: {{ ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
 {{ end }}
 
-{{/* ------ I don't know how to "return" or "exit early", so use this variable to keep track of whether should exit ------ */}}
-{{$continue := true}}
-
-{{/* ------  Quit if a warning was issued recently ------  */}}
-{{$note := dbGet 0 $lastSupportWarningKey}}
-{{if and $continue $note}}
-    {{$continue = false}}
-{{else}}
-    {{dbSetExpire 0 $lastSupportWarningKey "" $globalMessageFrequency}}
-{{ end }}
-
-{{/* ------ Reply user if their individual timeout has expired  ------ */}}
-{{if $continue}}
-    {{$note := dbGet .User.ID $lastSupportWarningKey}}
-    {{if not $note}}
-        {{dbSetExpire .User.ID $lastSupportWarningKey "" $messageFrequency}}
+{{/* ------  Don't print if a warning was issued recently to either this specific user or globally ------  */}}
+{{ if (dbGet 0 $lastSupportWarningKey) }}
+{{ else if (dbGet .User.ID $lastSupportWarningKey) }}
+{{ else }}
+    {{dbSetExpire 0 $lastSupportWarningKey "" (toInt $globalMessageFrequency.Seconds) }}
+    {{dbSetExpire .User.ID $lastSupportWarningKey "" (toInt $messageFrequency.Seconds) }}
 This message will delete itself in {{ humanizeDurationSeconds $messageDeleteDelay }}
-    {{ end }}
-{{ end }}
+{{ end}}
 
 {{/* ------ Automatically delete this message after given delay  ------ */}}
-{{ deleteResponse $messageDeleteDelay  }}
+{{ deleteResponse $messageDeleteDelay.Seconds  }}
