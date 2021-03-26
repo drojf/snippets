@@ -1,17 +1,10 @@
-{{/*
-if user is not developer [IMPLEMENTED, need to update ID]
-and user not warned in last month [IMPLEMENTED, need to update time]
-and no warning issued in last hour [IMPLEMENTED, need to update time]
-and user has been member for < 6 months [?? don't implement this ??]
-*/}}
-
 {{$lastSupportWarningKey := "supportWarning"}}
-{{$globalMessageFrequency := toDuration "5s"}}
-{{$messageFrequency := toDuration "10s"}}
-{{$messageDeleteDelay := toDuration "30m" }}
+{{$globalMessageFrequency := toDuration "59m"}}
+{{$messageFrequency := toDuration "336h"}}
+{{$messageDeleteDelay := toDuration "1h" }}
 
 {{/* ------ Print database state for debugging ------ */}}
-{{ if true }}
+{{ if false }}
 Global Timeout: {{ ((dbGet 0 $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
 User Timeout: {{ ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentTime) }}
 {{ end }}
@@ -22,7 +15,18 @@ User Timeout: {{ ((dbGet .User.ID $lastSupportWarningKey).ExpiresAt.Sub currentT
 {{ else }}
     {{dbSetExpire 0 $lastSupportWarningKey "" (toInt $globalMessageFrequency.Seconds) }}
     {{dbSetExpire .User.ID $lastSupportWarningKey "" (toInt $messageFrequency.Seconds) }}
-This message will delete itself in {{ humanizeDurationSeconds $messageDeleteDelay }}
+Hi {{ .User.Mention }}! If you have a bug or can't run the game, please do the following to get your issue resolved quickly:
+    1. Go to the wiki: https://07th-mod.com/wiki
+        - Type some key words into the search bar at the top of the page relating to your question, to see if it is already answered
+    2. Go to the support page: https://07th-mod.com/wiki/support-checklist/
+        1. Follow Step 1 of the checklist, by filling in the support template, then paste it into discord
+        2. Follow Step 2 of the checklist if your issue is graphics related, by sending a screenshot
+        3. Follow Step 3 of the checklist by sending your installer log file. The `.zip` should be in your browser downloads.
+            - If you can't find it, see Step 3 here https://07th-mod.com/wiki/support-checklist/ for more help on finding it
+
+If you're following up an existing issue, you can ignore the above, but briefly summarize who you are to remind us.
+
+This message will delete itself in {{ humanizeDurationSeconds $messageDeleteDelay }}.
 {{ end}}
 
 {{/* ------ Automatically delete this message after given delay  ------ */}}
