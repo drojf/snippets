@@ -64,11 +64,11 @@ def main(src_folder, dst_folder):
 	src_paths = list(Path(src_folder).rglob('**/*.*'))
 
 	copying_report = CopyingReport()
-	for src_path in src_paths:
+	for i, src_path in enumerate(src_paths):
 		src_rel_path = os.path.relpath(src_path, src_folder)
 		dst_path = os.path.join(dst_folder, src_rel_path)
 
-		print(f"Processing [{src_rel_path}]")
+		print(f"Processing {i}/{len(src_paths)} [{src_rel_path}]")
 		need_copy, need_optimize = image_needs_update(src_path, dst_path, copying_report)
 		if need_copy:
 			Path(os.path.dirname(dst_path)).mkdir(parents=True, exist_ok=True)
