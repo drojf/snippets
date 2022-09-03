@@ -29,17 +29,42 @@ def oxipng(path):
 def ect(path):
 	subprocess.run(['ect', '-9', path])
 
+# Overlay the input image on a background with R, G, B all set to background_value
+def composite_image_on_background_as_RGB(img_any_format: Image, background_value: int):
+	img = img_any_format.convert('RGBA')
+	background = Image.new('RGBA', img.size, (background_value, background_value, background_value))
 
-# See https://stackoverflow.com/questions/35176639/compare-images-python-pil/56280735
-def images_are_same(src_path, dst_path) -> bool:
-	# Note: PIL will silently fail if mode is RGBA, so covert to RGB image before processing
-	# TODO: support proper alpha channel comparison
-	src_image = Image.open(src_path).convert('RGB')
-	dst_image = Image.open(dst_path).convert('RGB')
+	return Image.alpha_composite(background, img).convert('RGB')
+
+# Check if two images are identical when alpha composited over the same background
+# The background will have R, G, B all set to background_value
+def images_same_on_background(src_image, dst_image, background_value):
+	src_image = composite_image_on_background_as_RGB(src_image, background_value)
+	dst_image = composite_image_on_background_as_RGB(dst_image, background_value)
 
 	diff = ImageChops.difference(src_image, dst_image)
 
 	return diff.getbbox() == None
+
+# If the image has an alpha channel, we only care about the non-zero alpha pixels
+# Overlaying the image on a solid background before comparison achieves this effect
+#
+# Need to use two different backgrounds in case there is part of the image with
+# exactly the same color as the background
+#
+# See https://stackoverflow.com/questions/35176639/compare-images-python-pil/56280735
+# See https://stackoverflow.com/a/33507138/848627
+def images_are_same(src_path, dst_path) -> bool:
+	src_image = Image.open(src_path)
+	dst_image = Image.open(dst_path)
+
+	if not images_same_on_background(src_image, dst_image, 0):
+		return False
+
+	if not images_same_on_background(src_image, dst_image, 255):
+		return False
+
+	return True
 
 # Returns a tuple of (needs_copy, needs_optimize)
 def image_needs_update(src_path: Path, dst_path, report: CopyingReport) -> bool:
@@ -88,8 +113,6 @@ def main(src_folder, dst_folder):
 
 
 if __name__ == '__main__':
-	print("Warning: this script does not properly support images with alpha - will convert to RGB image first.")
-
 	if len(sys.argv) < 3:
 		print("Need 2 arguments: python copy_and_optimize_png [src_folder] [dst_folder]")
 		raise SystemExit(-1)
